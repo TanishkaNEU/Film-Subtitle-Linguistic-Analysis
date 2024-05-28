@@ -1,0 +1,435 @@
+---
+title: "Linguistic data of 32k film subtitles"
+author: "Harshal Shinde, Amogh Inamdar, Tanishka Adhlakha, Yash Gaikwad"
+date: "02/12/2023"
+output:
+  
+  
+  html_document: default
+  pdf_document: default
+  always_allow_html: yes
+---
+                              
+```{r School comparison, warning=FALSE, include=FALSE, echo=FALSE}
+library(sf)
+library(raster)
+library(dplyr)
+library(magrittr)
+library(tidyr)
+library(tidyverse)
+library(dplyr, warn.conflicts = FALSE)
+library(spData)
+library(ggplot2)
+library(plotly)
+library(treemapify)
+library(stringr)
+library(purrr)
+library(lubridate)
+library(stringr)
+library(readxl)
+library(ggplot2)
+library(reshape2)
+library(ggalluvial)
+library(highcharter)
+library(plotly)
+library(ggraph)
+library(vctrs)
+library(webr)
+library(RColorBrewer)
+library(gapminder)
+library(treemap)
+library(pals)
+library(corrplot)
+
+df_movie <- read.csv(file.choose())
+df_movie
+```
+               
+                              
+                              
+                           
+
+### **Contents**
+
+**1. Problem Statement**
+
+**2. About the dataset**
+
+**3. Output**
+
+3.1 Distribution of movies
+
+3.2 How does rating works with votes?
+
+3.3 How does rating works with emotions?
+
+**4. Conclusion**
+
+**5. References**
+
+### **1. Problem Statement**
+
+Televisions have been a major source of our entertainment since a long
+time. We watch movies regardless of the language or countries they are
+released in. They subconsciously make us live the feelings the character
+passes through in a movie. Today there has been a large surge in K-Drama
+viewership around the world even when they don't understand the
+language, subtitles play a vital role in such times. Subtitles also help
+when there are movie characters who use heavy accent.
+
+Robertjoellewis-film-subtitles gives us a list of extensive data related
+to movies having information such as movie names, when they were
+released, their runtime, ratings, count of words the movie had along
+with sub categories of positive, negative words also count of nouns and
+pronouns used. The data set can be used to find how different types of
+words used in various genre create a better impact and can get better
+rating. Reseaching on such data will provide a good insight for further
+movie producers on when and words should be used. Use of positive words
+create a sense of light hearted movie which attracts large audience and
+get above average ratings where as serious movies like documentory and
+biography are where people download subtitles to listen to words more
+carefully, also in action movies people use subtitles as there is a lot
+happening and it is hard to listen everything.
+
+### **2. About the Dataset**
+
+The dataset majorly divides the movies on the basis of genre. It gives
+extensive information on various factors like: -Movie Year -Total Words
+-Harm Virtue -Rating rank -Count of positive words used -Count of
+negative words used -Subtitles download count
+
+The dataset is referred from
+"<https://data.world/robertjoellewis/film-subtitles>".
+
+```{r, echo=FALSE}
+#df_movie1 <- df_movie[, c(8:33, 41:52, 751:779 ,900:925)]
+```
+
+```{r, separating country run time, echo=FALSE}
+#df_movie3 <- df_movie2 %>%
+ # separate(running_time, c("country1","country2","country3"),sep = ",")
+```
+
+```{r, treemap, echo=FALSE}
+
+#df_movie_treemap <- df_movie3 %>%
+ # select(genre1, rating_rank, SubDownloadsCnt) %>%
+  #group_by(genre1, rating_rank) %>%
+  #summarise(abc = sum(SubDownloadsCnt),.groups = 'drop') 
+#df_movie_treemap$rating_rank <- ceiling(df_movie_treemap$rating_rank)
+
+#ggplot(df_movie_treemap, aes(area = abc , fill = genre1, label = #df_movie_treemap$rating_rank, subgroup = genre1))   +geom_treemap() +
+ # geom_treemap_subgroup_border(colour="Red") +
+  #geom_treemap_text(colour = "white", place = "centre", grow = F, reflow=T) +
+  #labs(title= 'Rating Distribution according to Genre')
+
+```
+
+
+```{r, echo=FALSE}
+#df_movie_treemap <- df_movie3 %>%
+ # select(genre1, rating_rank) %>%
+  #group_by(genre1,rating_rank) %>%
+  #summarise(abc = rating_rank,.groups = 'drop') 
+#df_movie_treemap$rating_rank <- ceiling(df_movie_treemap$rating_rank)
+
+#ggplot(df_movie_treemap, aes(area = abc , fill = genre1, label = #df_movie_treemap$rating_rank, subgroup = genre1))   +geom_treemap() +
+ # geom_treemap_subgroup_border(colour="Red") +
+  #geom_treemap_text(colour = "white", place = "centre", grow = F, reflow=T) +
+  #labs(title= 'Rating Distribution according to Genre')
+
+```
+
+
+### **3. Output**
+
+#### **3.1 Distribution of movies**
+
+##### **How are all the movies distributed along the years on the basis of genre?**
+
+```{r, Treemap Chart, echo=FALSE, warning=FALSE}
+freq_table <- sort(table(df_movie$genre1), decreasing = TRUE) 
+df_treemap <- data.frame(category = names(freq_table), size = freq_table) 
+df_treemap <- df_treemap[-c(12,24),]
+total <- sum(df_treemap$size.Freq)
+
+# Create the treemap
+treemap(df_treemap, index = "category", vSize = "size.Freq", vColor = "size.Freq" ,type = "index", 
+        title = "Fig 1: Treemap of Category Frequencies") 
+
+```
+
+From the treemap plot we can see that drama and comedy genre movies
+equally dominate, followed by other genres like action, adventure,
+horror, crime and documentary. Other genres movies occupy a small space
+in comparison to drama and comedy movies. We can understand that
+audience would show much interest in these 2 genres resulting in them
+being much more produced.
+
+#### **3.2 How does rating works with votes?**
+
+##### **How many people did vote for the movie based on genres?**
+
+
+```{r, Bubbleplot, echo=FALSE, warning=FALSE}
+# Select the columns and group by genre1
+df_movie2 <- df_movie %>%
+  dplyr::select(MovieName, MovieYear, country, rating_rank, genre1, TotalWords, rating_votes) %>%
+  group_by(genre1) %>%
+  drop_na() %>% #drop null values if any
+  # Calculate the total count of votes based on genre
+  summarise(total_count_of_votes=sum(rating_votes), .groups = 'drop') %>% 
+  # arrange the results in descending order
+  arrange(desc(total_count_of_votes)) 
+
+# Plot a bubble chart to visualize the distribution of total counts of votes based on genre
+fig <- ggplot(df_movie2, aes(x = total_count_of_votes, y = genre1, size = total_count_of_votes, color = genre1)) +
+  geom_point(shape = 21, color = "blue", fill = "green", alpha = 0.7) +
+  scale_size_continuous(range = c(2, 10)) +
+  ggtitle("Fig 2: Genre vs Total Count of Votes") + #set plot label and x and y lables 
+  xlab("Genre") +
+  ylab("Total Count of Votes") +
+  scale_color_discrete(name = "Genre")
+ggplotly(fig, tooltip = c("text", "size"))
+
+```
+
+We can observe from the bubble plot that there were many votes given to
+action, comedy and drama movies, whereas other people did not vote for
+other movies. Action movies excites people and attracts more audience as
+much as comedy movies which are light hearted and fun to watch. A key
+detail that we can see from bubble plot and previously drawn tree map is
+that even though the action movies got more votes even though they are
+made fewer than drama and comedy genre movies. This gives us an
+important insight that people prefer comedy movies more.
+
+##### **What are the average ratings of each genre? Does more votes equal to higher rating?**
+
+
+```{r, Linegraph genre vs avg.rating, echo=FALSE, warning=FALSE} 
+# Filter the dataset based on highest and lowest rating rank average
+df_movie1 <- df_movie %>%
+  filter(genre1 %in% c("drama","action","documentary","western","horror","biography")) %>%
+   # Select the columns and group by genre1
+  dplyr::select(MovieName, MovieYear, country, rating_rank, genre1, genre2) %>%
+  group_by(genre1) %>%
+  # drop null values if any
+  drop_na() %>% 
+  # Calculate average of rating rank using mean() function
+  summarise(Average_Rating=mean(rating_rank), .groups = 'drop') %>%
+  #Arrange the results in descending order
+  arrange(desc(Average_Rating)) 
+
+#colors<-c("#9933FF", "#33FFFF", "red", "darkblue","green","yellow")
+
+p <- ggplot(df_movie1, aes(x=reorder(genre1,-Average_Rating), y=Average_Rating, fill = genre1)) + 
+  geom_bar(stat="identity") +
+  scale_fill_manual(values= palette(brewer.pal(n = 6, name = "Greens"))) +
+  ggtitle("Fig 3: Genre vs Average Rating") +
+  xlab("Genre") +
+  ylab("Average Rating")  
+# Plot a bar graph to visualize the average rating based on genre 
+ggplotly(p)
+#ggplotly(fig, tooltip = c("x", "y"))
+
+
+```
+
+The plot shows a bar graph where x-axis represent various movie genres
+and y-axis represent average_rating. We come to know a whole new fact
+that one of the fewer produced and voted genres like documentary and
+biography have the highest average rating crossing 7 on the other hand
+popularly produced and rated genres like drama have low average rating.
+Audience thus like to watch documentary and biography genre movies but
+being less produced gets less votes but on an average all movies have
+good ratings, whereas in case of drama genre movies have a variety of
+ratings including less rating resulting in lower average rating.
+
+##### **What are the average ratings of genres along the years?**
+
+
+```{r, Timeseries line graph, echo=FALSE, warning=FALSE, message=FALSE}
+
+# In this time Series plot, we select the required columns, group by Movie year and Genre, drop the null values and find the average of rating and the cum of votes.
+TimeSeries <- df_movie %>% dplyr::select(MovieYear, genre1, rating_rank, rating_votes) %>% group_by(MovieYear, Genre = genre1) %>% drop_na() %>% summarise(Average = mean(rating_rank), Votes = sum(rating_votes)) 
+
+# Filtering the required columns
+Documentary <- TimeSeries[TimeSeries$Genre == 'documentary',]
+Biography <- TimeSeries[TimeSeries$Genre == 'biography',]
+Animation <- TimeSeries[TimeSeries$Genre == 'animation',]
+Musical <- TimeSeries[TimeSeries$Genre == 'musical',]
+Crime <- TimeSeries[TimeSeries$Genre == 'crime',]
+Action <- TimeSeries[TimeSeries$Genre == 'action',]
+Comedy <- TimeSeries[TimeSeries$Genre == 'comedy',]
+Drama <- TimeSeries[TimeSeries$Genre == 'drama',]
+Western <- TimeSeries[TimeSeries$Genre == 'western',]
+Horror <- TimeSeries[TimeSeries$Genre == 'horror',]
+Fantasy <- TimeSeries[TimeSeries$Genre == 'fantasy',]
+Adult <- TimeSeries[TimeSeries$Genre == 'adult',]
+News <- TimeSeries[TimeSeries$Genre == 'news',]
+
+# Binding the required rows into one dataframe
+Top <- do.call("rbind", list(Documentary, Drama))
+Bottom <- do.call("rbind", list(Action, Horror))
+
+# Creating the two different time series plots
+AnalysisTop <- ggplot(data = Top, aes(x=MovieYear, y=Average, group = Genre, colour = Genre)) + geom_line(size = 1) + xlim(1915, 2015) +labs(y= "Average Rating", x =  "Year")  + theme_bw(base_size = 16) + theme(axis.text.x=element_text(angle=60,hjust=1)) + ggtitle("Fig 4: TimeSeries Analysis for Documentary VS Drama") +
+  scale_color_manual(values = c('Red','Green'))
+
+AnalysisTop
+
+AnalysisBottom <- ggplot(data = Bottom, aes(x=MovieYear, y=Average, group = Genre, colour = Genre)) + geom_line(size = 1) +labs(y= "Average Rating", x = "Year")  + theme_bw(base_size = 16) + theme(axis.text.x=element_text(angle=60,hjust=1)) + ggtitle("Fig 5: TimeSeries Analysis for Action VS Horror") +
+   scale_color_manual(values = c('Green','Red'))
+#ggplotly(s, tooltip = c("x", "y"))
+
+AnalysisBottom
+
+```
+
+Diving deep into the ratings in specific genres we can see from the
+above plots that movies from action and drama genre have a decline in
+rating over the past years and dropping under 6, this suggests us why the average rating for
+these genres have declined. On the other hand the rating for
+Documentary movies have stayed pretty much steady around the range of 7
+to 7.4 keeping the average rating high. Also there are some genre's with a high variable ratings over time such as horror movies as shown in line graph above.
+
+
+
+#### **3.3 How does rating works with emotions?**
+
+##### **Are genre's rated positively and negatively equivalently in USA and rest of world?**
+
+```{r, alluvial chart, echo=FALSE, warning=FALSE, message=FALSE}
+# We segregate the column to get the required column details
+df <- df_movie %>% separate(country, c("country_name1","country_name_2"), sep = ",")
+
+# We performed the required equality analysis to find sentiments
+df$Overall <- ifelse(df$Positive.ratio > df$Negative.ratio, 'Positively Rated', 'Negatively Rated')
+# Ceiled the rating to find a common ground.
+df$rating_rank <- ceiling(df$rating_rank)
+# We grouped the data on countries, genre, overall sentiments and rating rank while also calculating the number of positive reviews and negative reviews.
+Testing <- df %>% group_by(country_name1, genre1, Overall, rating_rank) %>% summarise(Pos = sum(Positive), Neg = sum(Negative)) 
+
+# Filtering the countries on USA vs others
+Testing$country_name1 <- ifelse(Testing$country_name1 == 'USA', 'USA', 'Others')
+# count(Testing, country_name1, sort = TRUE)
+Testing <- Testing %>% filter(genre1 %in% c("adventure","documentary","drama") & rating_rank %in% c(1,2,3)) %>% arrange(genre1, country_name1)
+
+Testing$Total = Testing$Pos + Testing$Neg
+
+# Creating the required alluvial chart using the required paramters. 
+Allu <- ggplot(Testing,
+       aes(y = Testing$Total, axis1 = Testing$country_name1, axis2 = Testing$genre1)) +
+  geom_alluvium(aes(fill = Testing$Overall), width = 1/12) +
+  geom_stratum(width = 1/12, fill = "yellow", color = "grey") +
+  labs(y= "Frequency of Votes", fill = "Viewer Sentiment" ) + 
+  geom_label(stat = "stratum", aes(label = after_stat(stratum))) +
+  scale_x_discrete(limits = c("Country", "Genre"), expand = c(.05, .05)) +
+  scale_fill_brewer(type = "qual", palette = "Set1") +
+  ggtitle("Fig 6: Distribution of Sentiment over Countries")
+Allu
+
+```
+
+The above alluvial plot shows country and genres assigned to vertical axis that are parallel. Vertical sizes of the blocks are proportional to the frequency, and so are the widths of the alluvial. The relation between country and genre based on negative rating and positive rating can be seen. USA has more number of positive ratings throughout all genres. Whereas other countries have equal positive and negative ratings for adventure genre and more positively rated documentary movies and more negatively rated drama movies.
+
+##### **How emotions and words are related?**
+```{r, corr plot1, echo=FALSE, warning=FALSE}
+# For dictionary 1, with phrases comprising of harm, Fairness, Ingroup, Authority, Purity and Morality
+film <- df_movie[, c(8:33, 41:52, 751:779 ,900:925)]
+# Sectioning the code for required columns
+film1 <- film %>% filter(genre1 == "drama")
+# Just using the films of drama genre
+cor_mat_list1 <- cor(film1[c(4,35,37,seq(from = 5, to = 25, by = 2))])
+ cor_p1 <- corrplot.mixed(cor_mat_list1, tl.cex=0.7, lower.col="black", number.cex=0.7, upper = "circle", tl.pos = "lt",diag ="u")  
+ # Creating a correlation between the words and total count as well as the positive and negative sentiment
+ mtext(" Fig 7: Genre: drama", at=-3, line=-0.3, cex=1, col = "green4")
+ # Creating a Title
+  mtext(" Correlation Matrix", at=-3, line=-1.3, cex=1, col = "green4")
+ 
+# just using the films of documentary genre
+film1 <- film %>% filter(genre1 == "documentary")
+cor_mat_list2 <- cor(film1[c(4,35,37,seq(from = 5, to = 25, by = 2))])
+ cor_p2 <- corrplot.mixed(cor_mat_list2, tl.cex=0.7,lower.col="black", number.cex=0.7, upper = "circle", tl.pos = "lt",diag ="u") 
+ # Creating a correlation between the words and total count as well as the positive and negative sentiment
+   mtext(" Fig 8: Genre: documentary", at=-3, line=-0.3, cex=1, col = "green4")
+     mtext(" Correlation Matrix", at=-3, line=-1.3, cex=1, col = "green4")
+
+```
+```{r, corr plot2, echo=FALSE, warning=FALSE}
+#for dictionary 2, with phrases comprising of work, life, leisure, home
+film1 <- film %>% filter(genre1 == "drama")
+# Just using the films of drama genre
+cor_mat_list1 <- cor(film1[c(4,35,37,seq(from = 68, to = 92, by = 2))])
+ cor_p1 <- corrplot.mixed(cor_mat_list1, tl.cex=0.7, lower.col="black",number.cex=0.5,upper = "circle", tl.pos = "lt",diag ="u") 
+ # Creating a correlation between the words and total count as well as the positive and negative sentiment
+     mtext(" Fig 9: Correlation Matrix", at=-3, line=-1.3, cex=1, col = "green4")
+     # Creating a Title
+      mtext(" Genre: drama", at=-3, line=-0.3, cex=1, col = "green4")
+ 
+      # Just using the films of documentary genre
+   film1 <- film %>% filter(genre1 == "documentary")
+cor_mat_list2 <- cor(film1[c(4,35,37,seq(from = 68, to = 92, by = 2))])
+ cor_p2 <- corrplot.mixed(cor_mat_list2, tl.cex=0.7, lower.col="black", number.cex=0.5, upper = "circle",  tl.pos = "lt",diag ="u")   
+  # Creating a correlation between the words and total count as well as the positive and negative sentiment
+ mtext(" Fig 10: Genre: documentary", at=-3, line=-0.3, cex=1, col = "green4")
+     mtext(" Correlation Matrix", at=-3, line=-1.3, cex=1, col = "green4")
+
+```
+
+The above correlation plot is used to highlight the most correlated words and emotions in a data table. We can see each variable fits always perfectly correlates with itself. The matrix is symmetrical along the diagonal where lower diagonal shows the numerical correlation and upper represents the depth in color and shape representation. Time and Positive words have high correlation between them in Documentary genre of 0.88 which represents both the words have a great direct relationship whereas a poor relationship can be seen between Filler and money of 0.04 which shows that they have least dependency between them. Also we can see a 0 value in Netspeak and Relig which denotes there is no relation whatsoever in them.
+
+Similarly the correlation between emotions can be seen in above graph for Documentary and Drama genre.
+
+##### **How sentiments and words are related?**
+```{r, Pie donut, echo=FALSE, warning=FALSE, message=FALSE}
+# We performed the required equality analysis to find sentiments
+df_movie$Overall <- ifelse(df$Positive.ratio > df$Negative.ratio, 'Positively Rated', 'Negatively Rated')
+# Selected the desired columns and grouped by genre and Overall and used summarise to count
+StackedBar <- df_movie %>% dplyr::select(genre1, Overall) %>% group_by(genre1, Overall) %>% summarise(Count = n())
+# Filtered the dataset to get the desired genres
+StackedBar <- StackedBar %>% filter(genre1 %in% c("action","biography","documentary","drama", "horror"))
+StackedBar$Genre <- StackedBar$genre1
+pie <- PieDonut(StackedBar, aes(x = Genre, y = Overall, count=Count), title="Fig 11: Sentiment Distribution over Genres")
+
+
+```
+
+The distribution of positive and negative sentiments can be seen over various genres. The count of positive sentiments are compared with negative sentiments to get how much area is covered by them respectively in each genre. We can see the Drama genre consists highly on positive sentiments creating happiness subconsciously  for the viewers, on the other hand we can see horror and action movies have equal distribution of positive and negative emotions. This creates an emotional roller coaster for the viewers.
+
+### **4. Conclusion**
+
+Over the analysis we learned how movies interact with viewers. The study shows graphical representation on how genres shows variations with various scenarios,
+
+1) The distribution of various genres of movies was plotted to find that there is a large number of Drama, Comedy and Drama movies produced in comparison to all other genres, Drama and Comedy being equal to all the remaining genres.
+
+2) The total votes viewers gave to the movies on the basis of genre revealed that Drama movies even though being the most produced was not the one with most number of votes, whereas Action and Comedy movies received more votes.
+
+3) When the average ratings for genre was calculated we observed that Documentary movies had the highest rating, this revealed that more number of votes doesn't necessarily means higher the average rating.
+
+4) The reason for higher average rating for Documentary movies was found when the time series line graph was drawn for Documentary and Drama genre showing the decline for ratings of Drama movies over past few years.
+
+5) In depth analysis of frequency of words with viewers sentiments in USA and other countries showed Positive and Negative rating given by the viewers. This showed that viewers from USA have given more positive ratings to all genres whereas other countries have mixed ratings according to genres.
+
+6) Further how words and emotions are related to create a sense of belonging for viewers was seen using the corrplot and which words create a positive impact was found.
+
+7) Viewers sentiments were seen using the distribution of positive and negative sentiments over genres which showed Drama movies have high positive sentiments compared to other genres.
+
+### **5. References**
+
+1. Robert Joel Lewis, Matthew Grizzard, Sydne Lea, Doug Ilijev, Jin-A Choi, Lisa Müsse & Gabriela O’Connor (2017) Large-Scale Patterns of Entertainment Gratifications in Linguistic Content of U.S. Films, Communication Studies, 68:4, 422-438, DOI: 10.1080/10510974.2017.1340903
+
+2. IMDB Movie Ranking. doi:https://www.imdb.com/search/title/?groups=top_250&sort=user_rating
+
+3. Seih, Y. T., Chung, C. K., & Pennebaker, J. W. (2011). Experimental manipulations of perspective
+taking and perspective switching in expressive writing. Cognition & Emotion, 25, 926–938.
+doi:10.1080/02699931.2010.512123
+
+4. Tamborini, R. (2011). Moral intuition and media entertainment. Journal of Media Psychology, 23,
+39–45. doi:10.1027/1864-1105/a000031
+
+5. Weber, R., Popova, L., & Mangus, J. M. (2013). Universal morality, mediated narratives, and neural
+synchrony. In R. Tamborini (Ed.), Media and the moral mind (pp. 26–42). New York, NY:
+Routledge.
+
+
